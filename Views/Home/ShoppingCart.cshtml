@@ -1,0 +1,106 @@
+﻿@{
+    ViewData["Title"] = "Shopping Cart";
+    var cartDetails = ViewBag.CartDetails as List<(AirGnG.Models.MenuItem Item, int Quantity)>;
+    var total = ViewBag.Total;
+}
+
+<h1>🛒 Shopping Cart</h1>
+<hr />
+
+@if (cartDetails != null && cartDetails.Any())
+{
+    <table class="table table-hover" style="opacity:90%">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var detail in cartDetails)
+            {
+                <tr>
+                    <td>@detail.Item.Name</td>
+                    <td>$@detail.Item.Price.ToString("F2")</td>
+                    <td>@detail.Quantity</td>
+                    <td>$@((detail.Item.Price * detail.Quantity).ToString("F2"))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="text-end mt-4">
+        <h3>Total: <span class="badge bg-danger">$@total.ToString("F2")</span></h3>
+    </div>
+
+    <div class="text-center mt-5">
+        <button id="confirmOrderBtn" class="btn btn-success btn-lg">
+            ✅ Confirm Order
+        </button>
+    </div>
+}
+else
+{
+    <div class="alert alert-warning text-center" role="alert">
+        Your shopping cart is empty. Go back to the <a asp-action="Index">Menu</a> to select some items!
+    </div>
+}
+
+<div class="modal fade" id="orderConfirmationModal" tabindex="-1" aria-labelledby="orderConfirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="orderConfirmationModalLabel">Order Submitted! 🎉</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Thank you for your order! Your submission details are below:</p>
+                <ul class="list-group">
+                    <li class="list-group-item"><strong>Order ID:</strong> <span id="modalOrderId"></span></li>
+                    <li class="list-group-item"><strong>Order Time:</strong> <span id="modalOrderTime"></span></li>
+                    <li class="list-group-item"><strong>Estimated Completion Time:</strong> <span id="modalCompletionTime"></span></li>
+                </ul>
+                <p class="mt-3">You will be served shortly!</p>
+            </div>
+            <div class="modal-footer">
+                <a asp-action="Index" class="btn btn-primary">Start New Order</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#confirmOrderBtn').click(function () {
+                $.ajax({
+                    url: '@Url.Action("ConfirmOrder", "Home")',
+                    type: 'POST',
+                    success: function (result) {
+                        if (result.success) {
+                            // Populate the modal fields
+                            $('#modalOrderId').text(result.orderId);
+                            $('#modalOrderTime').text(result.orderTime);
+                            $('#modalCompletionTime').text(result.completionTime);
+
+                            // Show the modal
+                            var myModal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
+                            myModal.show();
+
+                            // Optionally, disable the confirm button after successful submission
+                            $('#confirmOrderBtn').prop('disabled', true);
+                        } else {
+                            alert('Error confirming order.');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('An error occurred: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+
+}
